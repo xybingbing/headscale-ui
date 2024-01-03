@@ -1,15 +1,22 @@
 <script lang="ts">
 	import { Device } from '$lib/common/classes';
 	import { slide } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import DeviceRoutes from './DeviceCard/DeviceRoutes.svelte';
 	import DeviceTags from './DeviceCard/DeviceTags.svelte';
 	import MoveDevice from './DeviceCard/MoveDevice.svelte';
 	import RemoveDevice from './DeviceCard/RemoveDevice.svelte';
 	import RenameDevice from './DeviceCard/RenameDevice.svelte';
+	import { updateIp } from '$lib/common/apiFunctions.svelte';
+	import { alertStore } from '$lib/common/stores.js';
 
 	export let device = new Device();
 	let cardExpanded = false;
 	let cardEditing = false;
+	let editingIp = []
+	device.ipAddresses.forEach(function (_, index:number) {
+		editingIp[index] = false
+	})
 
 	// returns button colour based on time difference
 	function timeDifference(date: Date) {
@@ -55,6 +62,17 @@
 		}
 		return `Last seen ${timeDifference} ${timeUnit} ago`;
 	}
+
+	//修改ip
+	function updateIpAction(index:number, newIp:string) {
+		//console.log(device.id, newIp)
+		updateIp(device.id, newIp).then((response) => {
+			editingIp[index] = false;
+		}).catch((error) => {
+			$alertStore = error;
+			editingIp[index] = false;
+		});
+	}
 </script>
 
 <div class="card-primary">
@@ -97,8 +115,35 @@
 							<th>IP Addresses</th>
 							<td>
 								<ul class="list-disc list-inside">
-									{#each device.ipAddresses as address}
-										<li>{address}</li>
+									{#each device.ipAddresses as address, index}
+										{#if !editingIp[index] || false}
+											<li on:click|stopPropagation={() => {
+												editingIp[index] = true;
+											}}>{address}</li>
+										{:else}
+											<!-- svelte-ignore a11y-autofocus -->
+											<form on:submit|preventDefault={updateIpAction(index, address)}>
+												<input bind:value={address} autofocus required class="w-24" />
+												<button in:fade|global class="ml-1">
+													<!-- checkmark symbol -->
+													<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+													</svg></button
+												>
+												<!-- Delete cancel symbol -->
+												<button
+														type="button"
+														in:fade|global
+														on:click|stopPropagation={() => {
+															editingIp[index] = false;
+														}}
+														class="ml-1"
+												><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+												</svg></button
+												>
+											</form>
+										{/if}
 									{/each}
 								</ul>
 							</td>

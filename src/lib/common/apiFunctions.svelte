@@ -549,4 +549,37 @@
 				throw error;
 			});
 	}
+
+    // 设置ip
+    export async function updateIp(deviceID: string, ip: string): Promise<any> {
+        // variables in local storage
+        let headscaleURL = localStorage.getItem('headscaleURL') || '';
+        let headscaleAPIKey = localStorage.getItem('headscaleAPIKey') || '';
+
+        // endpoint url for editing users
+        let endpointURL = '/api/v1/machine/' + deviceID + '/updateIp';
+
+        await fetch(headscaleURL + endpointURL, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${headscaleAPIKey}`
+            },
+            body: JSON.stringify({
+                ip: ip
+            })
+        })
+            .then((response) => {
+                if (response.ok) {
+                    return response;
+                } else {
+                    return response.text().then((text) => {
+                        throw JSON.parse(text).message;
+                    });
+                }
+            })
+            .catch((error) => {
+                throw error;
+            });
+    }
 </script>
